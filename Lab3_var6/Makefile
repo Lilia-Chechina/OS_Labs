@@ -3,9 +3,9 @@ build:
 	gcc ./parent.c -o ./parent
 
 run: build
-	./parent test.txt
+	./parent file.txt
 
 clean:
 	rm -f *.out
 
-all: build
+all: run

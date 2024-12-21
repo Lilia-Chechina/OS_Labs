@@ -1,19 +1,18 @@
 #include <stdio.h>
-#include <unistd.h>  // write read close STDOUT_FILENO
-#include <stdlib.h>  // exit
-#include <sys/mman.h>  // mmap munmap shm_open
-#include <sys/types.h>  // типы данных и структуры для файлов и процессов
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>  // типы данных и структуры для файлов и процессов
-#include "stddef.h"
-#include <fcntl.h>  //  управление файлами (например, shm_open).
+#include <sys/stat.h>
+#include <stddef.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdbool.h>
 
-
 #define MEMORY_NAME "LR3"
 #define DATA_SIZE 256
-#define MEMORY_SIZE 8192
+#define MEMORY_SIZE 8192 
 
 void check_error(bool expression, char* message) {
     if (expression) {
@@ -23,52 +22,49 @@ void check_error(bool expression, char* message) {
     }
 }
 
-typedef struct {  
+typedef struct {
     size_t size;
     int data[DATA_SIZE];
 } res;
 
-int main() {
-    int fd = shm_open(MEMORY_NAME, O_RDONLY, S_IRUSR);
-    check_error(fd == -1, "Can't open shared memory file");
-    if (ftruncate(fd, MEMORY_SIZE) == -1) {
-        printf("File is too large");
+int main(int argc, char* argv[]) {
+    pid_t pid;
+    FILE *fp = NULL;
+    
+    if (argc != 2) {
+        write(1, "Wrong arguments\n", 17);
+        exit(EXIT_FAILURE);
     }
-    res *addr = mmap(NULL, MEMORY_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
-    check_error(addr == (void*)-1, "Mmap error");
-    addr->size = 0;
-
-    char c;
-    bool not_end = true;
-    int nmbr = 0;
-    int result = 0;
-    int count = 0;
-    int numbers[100];
-
-    do {
-        if (not_end) {
-            if (c <= '9' && c >= '0') {
-                nmbr = nmbr * 10 + c - '0';
-            }
-            if (c == ' ' || c == '\n' || c == EOF) {
-                numbers[count] = nmbr;
-                nmbr = 0;
-                count++;
-                if (c == '\n' || c == EOF) {
-                    for (int i = 0; i < count; i++) {
-                        result = result + numbers[i];
-                    }
-                    not_end = false;
-                    count = 0;
-                }
-            }
+    
+    pid = fork();        
+    
+    if (pid == -1) {   
+        perror("fork");
+        return -1;
+    } 
+    else if (pid == 0) { 
+        fp = freopen(argv[1], "r", stdin);
+        check_error(fp == NULL, "Can't open file");
+        execl("./child", "/.child", NULL);  
+        perror("execl");
+        return 1;
+    } 
+    else {
+        wait(0);
+        int fd = shm_open(MEMORY_NAME, O_RDONLY, S_IRUSR | S_IWUSR);
+        check_error(fd == -1, "Can't open shared memory file");
+        res *addr = mmap(NULL, MEMORY_SIZE, PROT_READ, MAP_SHARED, fd, 0);
+        check_error(addr == (void*) -1, "Mmap error");
+        
+        for (int i = 0; i < addr->size; i++) {
+            printf("Сумма цифр в %d строке: %d\n", i + 1, addr->data[i]);
         }
-        if (c == '\n' || c == EOF) {
-            addr->data[addr->size++] = result;
-            result = 0;
-            not_end = true;
-        }
-    } while((scanf("%c", &c)) > 0);
-
+        
+        printf("Рассчет окончен!\n");
+        munmap(addr, MEMORY_SIZE);
+        shm_unlink(MEMORY_NAME);
+        close(fd);
+    }
+    
     return 0;
 }

@@ -1,17 +1,16 @@
 #include <stdio.h>
-#include <unistd.h>  // write read close STDOUT_FILENO
-#include <stdlib.h>  // exit
-#include <sys/mman.h>  // mmap munmap shm_open
-#include <sys/types.h>  // типы данных и структуры для файлов и процессов
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>  // типы данных и структуры для файлов и процессов
-#include "stddef.h"
-#include <fcntl.h>  //  управление файлами shm_open).
+#include <sys/stat.h>
+#include <stddef.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdbool.h>
 
-
-#define MEMORY_NAME "LR3"  
+#define MEMORY_NAME "LR3"
 #define DATA_SIZE 256
 #define MEMORY_SIZE 8192
 
@@ -29,13 +28,16 @@ typedef struct {
 } res;
 
 int main() {
-    int fd = shm_open(MEMORY_NAME, O_RDWR, S_IRUSR | S_IWUSR);
+    int fd = shm_open(MEMORY_NAME, O_EXCL | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     check_error(fd == -1, "Can't open shared memory file");
+
     if (ftruncate(fd, MEMORY_SIZE) == -1) {
         printf("File is too large");
     }
+
     res *addr = mmap(NULL, MEMORY_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
     check_error(addr == (void*)-1, "Mmap error");
+
     addr->size = 0;
 
     char c;
@@ -63,12 +65,13 @@ int main() {
                 }
             }
         }
+
         if (c == '\n' || c == EOF) {
             addr->data[addr->size++] = result;
             result = 0;
             not_end = true;
         }
-    } while((scanf("%c", &c)) > 0);
+    } while ((scanf("%c", &c)) > 0);
 
     return 0;
 }
