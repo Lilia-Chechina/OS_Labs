@@ -1,0 +1,4 @@
+/Users/pearl.lilie/Desktop/Labs/OS_Labs/battleship/CMakeFiles/client.dir
+/Users/pearl.lilie/Desktop/Labs/OS_Labs/battleship/CMakeFiles/server.dir
+/Users/pearl.lilie/Desktop/Labs/OS_Labs/battleship/CMakeFiles/edit_cache.dir
+/Users/pearl.lilie/Desktop/Labs/OS_Labs/battleship/CMakeFiles/rebuild_cache.dir
